@@ -147,12 +147,6 @@ export class AppComponent {
     this.lastLocation = this.notes[this.notes.length - 1];
     this.secondLastLocation = this.notes[this.notes.length - 2];
     console.log(' this.secondLastLocation',  this.secondLastLocation)
-
-    if (
-      this.lastLocation &&
-      this.lastLocation.latitude !== this.secondLastLocation.latitude &&
-      this.lastLocation.longitude !== this.secondLastLocation.longitude
-    ) {
       setInterval(() => {
         this.getCurrentPosition().subscribe((position: any) => {
           const icon = L.icon({
@@ -171,5 +165,5 @@ export class AppComponent {
         });
       }, 3000);
     }
-  }
+   
 }
