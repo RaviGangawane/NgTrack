@@ -1,0 +1,221 @@
+
+import { ChangeDetectorRef, Component } from '@angular/core';
+import { environment } from '../environments/environment';
+import * as L from 'leaflet';
+import { Observable, Subscriber } from 'rxjs';
+
+import { Firestore, collectionData, collection } from '@angular/fire/firestore';
+import { DataService } from './data.service';
+export interface Note {
+  id?: string;
+  timestamp: string;
+  accuracy: string;
+  altitude: string;
+  altitudeAccuracy: string;
+  heading: string;
+  latitude: string;
+  longitude: string;
+  speed: string;
+}
+export interface Coords {
+  accuracy: string;
+  altitude: string;
+  altitudeAccuracy: string;
+  heading: string;
+  latitude: string;
+  longitude: string;
+  speed: string;
+}
+@Component({
+  selector: 'app-root',
+  templateUrl: './app.component.html',
+  styleUrls: ['./app.component.scss'],
+})
+export class AppComponent {
+  title = 'ngTrack';
+  map: any;
+
+  // planes = [
+  //   ['7C6B07', 18.5161817, 73.6695902],
+  //   ['7C6B38', 18.5161817, 73.7695902],
+  //   ['7C6CA1', 18.5161817, 73.8695902],
+  //   ['7C6CA2', 18.5161817, 73.9695902],
+  //   ['C81D9D', 18.5161817, 74.1695902],
+  //   ['C82009', 18.5161817, 74.2695902],
+  //   ['C82081', 18.5161817, 74.3695902],
+  //   ['C820AB', 18.5161817, 74.4695902],
+  //   ['C820B6', 18.5161817, 74.5695902],
+  // ];
+
+  notes: Note[] = [];
+  lastLocation: any;
+  constructor(
+    private firestore: Firestore,
+    private dataService: DataService,
+    private cd: ChangeDetectorRef
+  ) {
+    this.dataService.getNotes().subscribe((res) => {
+      this.notes = res;
+      this.lastLocation = this.notes[this.notes.length - 1];
+      this.cd.detectChanges();
+    });
+  }
+
+  public ngAfterViewInit(): void {
+    this.loadMap();
+  }
+
+  private getCurrentPosition(): any {
+    return new Observable((observer: Subscriber<any>) => {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition((position: any) => {
+          this.lastLocation = this.notes[this.notes.length - 1];
+          console.log(
+            'lastLocation ===>',
+            this.lastLocation.latitude,
+            position.coords.latitude
+          );
+
+          if (
+            this.lastLocation &&
+            this.lastLocation.latitude !== position.coords.latitude &&
+            this.lastLocation.longitude !== position.coords.longitude
+          ) {
+            observer.next({
+              latitude: position.coords.latitude,
+              longitude: position.coords.longitude,
+              accuracy: position.coords.accuracy,
+            });
+            this.dataService.addNote({
+              timestamp: position.timestamp,
+              accuracy: position.coords.accuracy,
+              altitude: position.coords.altitude,
+              altitudeAccuracy: position.coords.altitudeAccuracy,
+              heading: position.coords.heading,
+              latitude: position.coords.latitude,
+              longitude: position.coords.longitude,
+              speed: position.coords.speed,
+            });
+          }
+
+          observer.complete();
+          this.dataService.getNotes().subscribe((res) => {
+            this.notes = res;
+            this.cd.detectChanges();
+          });
+        });
+      } else {
+        observer.error();
+      }
+    });
+  }
+
+  private loadMap(): void {
+    this.map = L.map('map').setView([0, 0], 1);
+    L.tileLayer(
+      'https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_token={accessToken}',
+      {
+        attribution:
+          'Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, Imagery © <a href="https://www.mapbox.com/">Mapbox</a>',
+        maxZoom: 18,
+        id: 'mapbox/streets-v11',
+        tileSize: 512,
+        zoomOffset: -1,
+        accessToken: environment.mapbox.accessToken,
+      }
+    ).addTo(this.map);
+
+    // var map = L.map('map').setView([-41.3058, 174.82082], 8);
+    //  var mapLink =
+    //       '<a href="http://openstreetmap.org">OpenStreetMap</a>';
+    //   L.tileLayer(
+    //       'http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    //       attribution: '&copy; ' + mapLink + ' Contributors',
+    //       maxZoom: 18,
+    //       }).addTo(map);
+
+    // for (let index = 0; index < this.planes.length; index++) {
+    //   const element = this.planes[index];
+    //   console.log('element', element);
+    //   //  const marker = new L.marker([element[1],element[2]])
+    //   //   .bindPopup(this.planes[index][0])
+    //   //   .addTo(this.map);
+    //   const icon = L.icon({
+    //     iconUrl:
+    //       'https://res.cloudinary.com/rodrigokamada/image/upload/v1637581626/Blog/angular-leaflet/marker-icon.png',
+    //     shadowUrl:
+    //       'https://res.cloudinary.com/rodrigokamada/image/upload/v1637581626/Blog/angular-leaflet/marker-shadow.png',
+    //     popupAnchor: [13, 0],
+    //   });
+
+    //   const marker = L.marker(
+    //     [Number(this.planes[index][1]), Number(this.planes[index][2])],
+    //     { icon }
+    //   ).bindPopup('Angular Leaflet');
+    //   marker.addTo(this.map);
+    // }
+
+    let markers: [number, number][] = [
+      [18.5161817, 73.6695902],
+      [18.5161817, 73.7695902],
+      [20.5161817, 73.8695902],
+      [18.5161817, 73.9695902],
+      [20.5161817, 74.1695902],
+      [18.5161817, 74.2695902],
+      [20.5161817, 74.3695902],
+      [18.5161817, 74.4695902],
+      [18.5161817, 74.5695902],
+    ];
+    var route = L.featureGroup();
+
+    var n = markers.length;
+    const icon = L.icon({
+      iconUrl:
+        'https://res.cloudinary.com/rodrigokamada/image/upload/v1637581626/Blog/angular-leaflet/marker-icon.png',
+      shadowUrl:
+        'https://res.cloudinary.com/rodrigokamada/image/upload/v1637581626/Blog/angular-leaflet/marker-shadow.png',
+      popupAnchor: [13, 0],
+    });
+    for (var i = 0; i < n - 1; i++) {
+      var marker = L.marker([Number(markers[i][0]), Number(markers[i][1])], {
+        icon,
+      });
+
+      var line = L.polyline([markers[i], markers[i + 1]]);
+
+      route.addLayer(marker);
+      route.addLayer(line);
+    }
+    route.addLayer(new L.Marker(markers[n - 1]));
+
+    this.map.fitBounds(route.getBounds());
+
+    this.map.addLayer(route);
+
+    route.on('snakestart snake snakeend', function (ev) {
+      console.log('ev', ev);
+      console.log(ev.type);
+    });
+
+    setInterval(() => {
+      this.getCurrentPosition().subscribe((position: any) => {
+        // latitude: 18.5161817 18.5161817
+        // longitude: 73.6695902 73.6695902
+        this.map.flyTo([position.latitude, position.longitude], 9);
+
+        const icon = L.icon({
+          iconUrl:
+            'https://res.cloudinary.com/rodrigokamada/image/upload/v1637581626/Blog/angular-leaflet/marker-icon.png',
+          shadowUrl:
+            'https://res.cloudinary.com/rodrigokamada/image/upload/v1637581626/Blog/angular-leaflet/marker-shadow.png',
+          popupAnchor: [13, 0],
+        });
+
+        const marker = L.marker([position.latitude, position.longitude], {
+          icon,
+        }).bindPopup('Angular Leaflet');
+        marker.addTo(this.map);
+      });
+    }, 3000);
+  }
+}
