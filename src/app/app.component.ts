@@ -52,11 +52,11 @@ export class AppComponent {
         navigator.geolocation.getCurrentPosition((position: any) => {
           this.lastLocation = this.notes[this.notes.length - 1];
 
-          if (
-            this.lastLocation &&
-            this.lastLocation.latitude !== position.coords.latitude &&
-            this.lastLocation.longitude !== position.coords.longitude
-          ) {
+          // if (
+          //   this.lastLocation &&
+          //   this.lastLocation.latitude !== position.coords.latitude &&
+          //   this.lastLocation.longitude !== position.coords.longitude
+          // ) {
             observer.next({
               latitude: position.coords.latitude,
               longitude: position.coords.longitude,
@@ -72,7 +72,7 @@ export class AppComponent {
               longitude: position.coords.longitude,
               speed: position.coords.speed,
             });
-          }
+          // }
 
           observer.complete();
           this.dataService.getNotes().subscribe((res) => {
@@ -135,7 +135,7 @@ export class AppComponent {
         route.addLayer(line);
       }
       // route.addLayer(new L.Marker(markers[n - 1]));
-      this.map.fitBounds(route.getBounds());
+      // this.map.fitBounds(route.getBounds());
       this.map.addLayer(route);
 
       route.on('snakestart snake snakeend', function (ev) {
