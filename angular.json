@@ -17,7 +17,7 @@
                 "build": {
                     "builder": "@angular-devkit/build-angular:browser",
                     "options": {
-
+                        "baseHref": "https://ravigangawane.github.io/NgTrack/",
                         "outputPath": "docs/",
                         "index": "src/index.html",
                         "main": "src/main.ts",
